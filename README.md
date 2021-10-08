@@ -7,4 +7,6 @@ Features:
 * Mention, emote, and channel resolution
 * Mention notifications
 
+Try it [here](https://replit.com/@Derpius/DiscordCLI)
+
 **Due to using urwid this is not compatible with Windows**
