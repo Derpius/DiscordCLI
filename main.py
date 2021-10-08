@@ -9,6 +9,8 @@ import os
 
 # Get initial config
 TOKEN = os.environ["TOKEN"] if "TOKEN" in os.environ else input("Enter a Discord bot token: ")
+TIMEZONE = os.environ["TIMEZONE"] if "TIMEZONE" in os.environ else input("Enter your timezone code (defaults to UTC): ")
+
 
 intents = discord.Intents().default()
 intents.members = True
@@ -299,6 +301,7 @@ loop = urwid.MainLoop(terminal, event_loop=event_loop)
 aloop.create_task(client.start(TOKEN))
 
 def on_user_type():
+	if terminal.chatbox.edit_text[0] == "/": return
 	channel = client.get_channel(current_channel)
 	if channel.permissions_for(channel.guild.me).send_messages:
 		asyncio.ensure_future(channel.trigger_typing(), loop=aloop)
