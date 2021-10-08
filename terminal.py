@@ -16,7 +16,7 @@ class Terminal(urwid.WidgetWrap):
 		self.buffer_set = False
 		self.chatbox = urwid.Edit("Logging in...", "")
 
-		self.typing_callback = lambda: None
+		self.typing_callback = lambda key: None
 
 		self._w = urwid.Frame(
 			header=urwid.Pile([self.header, urwid.Divider()]),
@@ -88,7 +88,7 @@ class Terminal(urwid.WidgetWrap):
 				self._draw_history()
 			return
 
-		if key != "backspace": self.typing_callback()
+		if key != "backspace": self.typing_callback(key)
 		super(Terminal, self).keypress(size, key)
 
 	def mouse_event(self, size, event, button, col, row, focus):

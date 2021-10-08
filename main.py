@@ -4,6 +4,7 @@ import urwid
 from terminal import Terminal
 from inspect import signature
 import find
+import pytz
 
 import os
 
@@ -11,6 +12,10 @@ import os
 TOKEN = os.environ["TOKEN"] if "TOKEN" in os.environ else input("Enter a Discord bot token: ")
 TIMEZONE = os.environ["TIMEZONE"] if "TIMEZONE" in os.environ else input("Enter your timezone code (defaults to UTC): ")
 
+try:
+	TIMEZONE = pytz.timezone(TIMEZONE)
+except pytz.exceptions.UnknownTimeZoneError:
+	TIMEZONE = pytz.utc
 
 intents = discord.Intents().default()
 intents.members = True
@@ -26,8 +31,6 @@ commands = {}
 
 terminal = Terminal()
 
-
-
 def print_message(message: discord.Message):
 	name = "ERROR"
 	try:
@@ -35,7 +38,7 @@ def print_message(message: discord.Message):
 	except AttributeError:
 		name = message.author.name
 
-	msg_time = message.created_at.strftime('%H:%M')
+	msg_time = message.created_at.replace(tzinfo=pytz.utc).astimezone(TIMEZONE).strftime('%H:%M')
 
 	if len(message.clean_content) > 0:
 		terminal.print(f"{msg_time} {name}: {message.clean_content}")
@@ -300,11 +303,15 @@ loop = urwid.MainLoop(terminal, event_loop=event_loop)
 
 aloop.create_task(client.start(TOKEN))
 
-def on_user_type():
-	if terminal.chatbox.edit_text[0] == "/": return
+def on_user_type(key: str):
+	if len(terminal.chatbox.edit_text) > 0:
+		if terminal.chatbox.edit_text[0] == "/": return
+	elif key == "/": return
+
 	channel = client.get_channel(current_channel)
 	if channel.permissions_for(channel.guild.me).send_messages:
 		asyncio.ensure_future(channel.trigger_typing(), loop=aloop)
+
 terminal.typing_callback = on_user_type
 
 loop.run()
