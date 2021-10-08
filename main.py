@@ -298,4 +298,10 @@ loop = urwid.MainLoop(terminal, event_loop=event_loop)
 
 aloop.create_task(client.start(TOKEN))
 
+def on_user_type():
+	channel = client.get_channel(current_channel)
+	if channel.permissions_for(channel.guild.me).send_messages:
+		asyncio.ensure_future(channel.trigger_typing(), loop=aloop)
+terminal.typing_callback = on_user_type
+
 loop.run()
