@@ -18,7 +18,7 @@ def mention(name: str, members: list) -> str:
 		# If match, append to matches
 		if idx >= 0:
 			matches.append((idx, member.mention))
-	
+
 	if len(matches) > 0:
 		def sorter(v):
 			return v[0]
@@ -38,7 +38,7 @@ def emote(name: str, emotes: list) -> str:
 		# If match, append to matches
 		if idx != -1:
 			matches.append((idx, str(emote)))
-	
+
 	if len(matches) > 0:
 		def sorter(v):
 			return v[0]
@@ -58,7 +58,7 @@ def channel(name: str, channels: list) -> str:
 		# If match, append to matches
 		if idx != -1:
 			matches.append((idx, channel.mention))
-	
+
 	if len(matches) > 0:
 		def sorter(v):
 			return v[0]

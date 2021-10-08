@@ -1,16 +1,21 @@
-import discord
-import asyncio
-import urwid
-from terminal import Terminal
-from inspect import signature
-import find
-import pytz
-
 import os
+import asyncio
+from typing import Union
+from inspect import signature
+
+import discord
+import urwid
+
+import pytz
+import datetime
+
+from terminal import Terminal
+import find
 
 # Get initial config
 TOKEN = os.environ["TOKEN"] if "TOKEN" in os.environ else input("Enter a Discord bot token: ")
 TIMEZONE = os.environ["TIMEZONE"] if "TIMEZONE" in os.environ else input("Enter your timezone code (defaults to UTC): ")
+TYPING_CUTOFF = 10
 
 try:
 	TIMEZONE = pytz.timezone(TIMEZONE)
@@ -19,6 +24,7 @@ except pytz.exceptions.UnknownTimeZoneError:
 
 intents = discord.Intents().default()
 intents.members = True
+intents.typing = True
 client = discord.Client(intents=intents)
 
 current_channel = 0
@@ -26,6 +32,8 @@ current_guild = 0
 client_ready = False
 
 unread_channels = set()
+
+typing = {}
 
 commands = {}
 
@@ -97,6 +105,47 @@ async def on_message(message: discord.Message):
 				f"You just got mentioned at {message.guild.name if message.guild else 'Nowhere'} in {message.channel.category if message.channel.category else 'no-category'}:{message.channel.name}"
 			)
 
+def draw_typing():
+	text = ""
+	keys = list(typing)
+	len_typing = len(keys)
+
+	if len_typing == 1:
+		text = f"{typing[keys[0]][1].name} is typing..."
+	elif len_typing == 2:
+		text = f"{typing[keys[0]][1].name} and {typing[keys[1]][1].name} are typing..."
+	elif len_typing > 5:
+		text = "Several people are typing..."
+	else:
+		for i in range(len_typing):
+			if i < len_typing - 1:
+				text += typing[keys[i]][1].name + ", "
+			else:
+				text += f"and {typing[keys[i]][1].name} are typing..."
+	terminal.set_status(text)
+
+@client.event
+async def on_typing(
+	channel: discord.abc.Messageable,
+	user: Union[discord.User, discord.Member],
+	when: datetime.datetime
+):
+	if user.id == client.user.id: return
+	typing[user.id] = (channel, user, when)
+	draw_typing()
+
+async def invalidate_typing():
+	while True:
+		dirty = False
+		keys = list(typing)
+		for key in keys:
+			if (datetime.datetime.now() - typing[key][2]).total_seconds() > TYPING_CUTOFF:
+				del typing[key]
+				dirty = True
+		if dirty: draw_typing()
+
+		await asyncio.sleep(0.1)
+
 async def command_handler(command, *args):
 	if command == "help":
 		terminal.print("Commands:")
@@ -135,7 +184,7 @@ async def get_console():
 				else:
 					terminal.print("You do not have permission to send messages in this channel")
 
-		await asyncio.sleep(0.1)
+		await asyncio.sleep(0.01)
 
 def command(func):
 	sig = signature(func)
@@ -199,6 +248,10 @@ async def channel(channel_name, category_name = None):
 		if matches[0][0] in unread_channels:
 			unread_channels.remove(matches[0][0])
 
+		global typing
+		typing = {}
+		draw_typing()
+
 		terminal.print(f"Successfully switched to channel '{matches[0][1]}'")
 		terminal.set_prompt(
 			f"{matches[0][2]}:{matches[0][1]}> "
@@ -218,7 +271,7 @@ async def channels():
 		category = channel.category.name if channel.category else "no-category"
 		if category not in tree: tree[category] = []
 		tree[category].append((channel.name, channel.id in unread_channels))
-	
+
 	terminal.print("Channels:")
 	for category, channel_names in tree.items():
 		terminal.print(category)
@@ -231,7 +284,7 @@ async def guild(*args):
 	guild_name = " ".join(args)
 	if len(guild_name) == 0:
 		terminal.print("Missing required parameter guild_name")
-	
+
 	guilds = client.guilds
 	matches = [
 		(guild.id, guild.name, guild)
@@ -263,14 +316,14 @@ async def guild(*args):
 		if not channel: raise Exception("Guild has no public text channels")
 		current_channel = channel.id
 
-		global members, emotes
-		members = matches[0][2].members
-		emotes = matches[0][2].emojis
-
 		if channel.permissions_for(channel.guild.me).read_message_history:
 			history = await channel.history(limit=128).flatten()
 			for i in range(len(history) - 1, -1, -1):
 				print_message(history[i])
+
+		global typing
+		typing = {}
+		draw_typing()
 
 		terminal.print(f"Successfully switched to guild '{matches[0][1]}'")
 		terminal.set_prompt(
@@ -296,6 +349,7 @@ async def nick(*args):
 
 # Set up event loop
 client.loop.create_task(get_console())
+client.loop.create_task(invalidate_typing())
 
 aloop = asyncio.get_event_loop()
 event_loop = urwid.AsyncioEventLoop(loop=aloop)

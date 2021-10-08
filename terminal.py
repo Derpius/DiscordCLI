@@ -12,6 +12,8 @@ class Terminal(urwid.WidgetWrap):
 		self.history_ptr = 0
 		self.body = urwid.Text("")
 
+		self.status = urwid.Text("")
+
 		self.input_buffer = ""
 		self.buffer_set = False
 		self.chatbox = urwid.Edit("Logging in...", "")
@@ -21,7 +23,7 @@ class Terminal(urwid.WidgetWrap):
 		self._w = urwid.Frame(
 			header=urwid.Pile([self.header, urwid.Divider()]),
 			body=urwid.ListBox([self.body]),
-			footer=urwid.Pile([urwid.Divider(), self.chatbox]),
+			footer=urwid.Pile([self.status, self.chatbox]),
 			focus_part="footer"
 		)
 
@@ -65,6 +67,9 @@ class Terminal(urwid.WidgetWrap):
 	
 	def set_title(self, title: str):
 		self.header.set_text(title)
+
+	def set_status(self, status: str):
+		self.status.set_text(status)
 
 	def set_prompt(self, prompt: str):
 		self.chatbox.set_caption(prompt)
