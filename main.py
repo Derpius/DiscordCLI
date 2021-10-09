@@ -25,6 +25,7 @@ except pytz.exceptions.UnknownTimeZoneError:
 intents = discord.Intents().default()
 intents.members = True
 intents.typing = True
+intents.presences = True
 client = discord.Client(intents=intents)
 
 current_channel = 0
@@ -202,13 +203,13 @@ def command(func):
 		commands[func.__name__] = (
 			lambda *args: func(*args),
 			str(sig)[1:-1],
-			func.__doc__ if func.__doc__ else "No documentation"
+			func.__doc__ if func.__doc__ else "No description"
 		)
 	else:
 		commands[func.__name__] = (
 			lambda *args: func(*(args[:len(sig.parameters)])),
 			str(sig)[1:-1],
-			func.__doc__ if func.__doc__ else "No documentation"
+			func.__doc__ if func.__doc__ else "No description"
 		)
 
 # Terminal Commands
@@ -350,6 +351,21 @@ async def nick(*args):
 	if not new_name or len(new_name) == 0: new_name = client.user.name
 	member = client.get_guild(current_guild).get_member(client.user.id)
 	await member.edit(nick=new_name)
+
+@command
+async def emotes():
+	'''Prints a list of emotes on the server'''
+	terminal.print("Emotes:")
+	for emote in client.get_guild(current_guild).emojis:
+		terminal.print(f":{emote.name}: - {str(emote.url)}")
+
+@command
+async def online():
+	'''Prints a list of the online users in this guild'''
+	terminal.print("Online:")
+	for member in client.get_guild(current_guild).members:
+		if member.status is discord.Status.online:
+			terminal.print(member.name)
 
 # Terminal colour scheme
 palette = [

@@ -88,7 +88,7 @@ class Terminal(urwid.WidgetWrap):
 		if key == "enter":
 			self.input_buffer = self.chatbox.edit_text
 			self.buffer_set = True
-			self.chatbox.edit_text = ""
+			self.chatbox.set_edit_text("")
 			return
 		if key == "up":
 			if self.history_ptr < len(self.history) - (get_terminal_size().lines - 4):
