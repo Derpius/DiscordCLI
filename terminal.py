@@ -7,10 +7,15 @@ HISTORY_MAX = 512 # Maximum number of lines to save (used with scrolling)
 class Terminal(urwid.WidgetWrap):
 	def __init__(self):
 		self.header = urwid.Text("DiscordCLI", align="center")
+		self._header_map = urwid.AttrMap(self.header, "secondary")
+
+		self._div_map = urwid.AttrMap(urwid.Divider(), "primary")
 
 		self.history = []
 		self.history_ptr = 0
 		self.body = urwid.Text("")
+		body_container = urwid.ListBox([self.body])
+		self._body_map = urwid.AttrMap(body_container, "primary")
 
 		self.status = urwid.Text("")
 
@@ -18,12 +23,15 @@ class Terminal(urwid.WidgetWrap):
 		self.buffer_set = False
 		self.chatbox = urwid.Edit("Logging in...", "")
 
+		footer = urwid.Pile([self.status, self.chatbox])
+		self._footer_map = urwid.AttrMap(footer, "secondary")
+
 		self.typing_callback = lambda key: None
 
 		self._w = urwid.Frame(
-			header=urwid.Pile([self.header, urwid.Divider()]),
-			body=urwid.ListBox([self.body]),
-			footer=urwid.Pile([self.status, self.chatbox]),
+			header=urwid.Pile([self._header_map, self._div_map]),
+			body=self._body_map,
+			footer=self._footer_map,
 			focus_part="footer"
 		)
 

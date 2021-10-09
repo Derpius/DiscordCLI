@@ -347,13 +347,19 @@ async def nick(*args):
 	member = client.get_guild(current_guild).get_member(client.user.id)
 	await member.edit(nick=new_name)
 
+# Terminal colour scheme
+palette = [
+	("primary", "white", "black"),
+	("secondary", "light gray", "dark cyan")
+]
+
 # Set up event loop
 client.loop.create_task(get_console())
 client.loop.create_task(invalidate_typing())
 
 aloop = asyncio.get_event_loop()
 event_loop = urwid.AsyncioEventLoop(loop=aloop)
-loop = urwid.MainLoop(terminal, event_loop=event_loop)
+loop = urwid.MainLoop(terminal, palette, event_loop=event_loop)
 
 aloop.create_task(client.start(TOKEN))
 
