@@ -176,11 +176,11 @@ async def get_console():
 				# Resolve mentions
 				for i in range(len(args)):
 					if len(args[i]) > 1 and args[i][0] == "@":
-						args[i] = find.mention(args[i][1:], guild.members)
+						args[i] = find.member(args[i][1:], guild.members).mention
 					elif len(args[i]) > 2 and args[i][0] == ":" and args[i][-1] == ":":
-						args[i] = find.emote(args[i][1:-1], guild.emojis)
+						args[i] = str(find.emote(args[i][1:-1], guild.emojis))
 					elif len(args[i]) > 1 and args[i][0] == "#":
-						args[i] = find.channel(args[i][1:], guild.text_channels)
+						args[i] = find.channel(args[i][1:], guild.text_channels).mention
 				inp = " ".join(args)
 
 				channel = client.get_channel(current_channel)
@@ -369,6 +369,19 @@ async def online():
 				terminal.print(f"{member.nick} ({member.name})")
 			else:
 				terminal.print(member.name)
+
+@command
+async def status(username):
+	'''Get status information for a user'''
+	user = find.member(username, client.get_guild(current_guild).members)
+	if not user:
+		terminal.print(f"Couldn't find user '{username}'")
+		return
+
+	terminal.print(f"Current status for {user.name}:")
+	if user.nick: terminal.print("Guild Nickname: " + user.nick)
+	terminal.print("Status: " + user.raw_status)
+	terminal.print("Activity: " + (user.activity.name if user.activity else "Nothing"))
 
 # Terminal colour scheme
 palette = [

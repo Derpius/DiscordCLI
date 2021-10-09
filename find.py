@@ -1,4 +1,4 @@
-def mention(name: str, members: list) -> str:
+def member(name: str, members: list) -> str:
 	matches = []
 	for member in members:
 		idx = -1
@@ -17,7 +17,7 @@ def mention(name: str, members: list) -> str:
 
 		# If match, append to matches
 		if idx >= 0:
-			matches.append((idx, member.mention))
+			matches.append((idx, member))
 
 	if len(matches) > 0:
 		def sorter(v):
@@ -25,7 +25,7 @@ def mention(name: str, members: list) -> str:
 		matches.sort(key=sorter)
 		return matches[0][1]
 	else:
-		return "@" + name
+		return None
 
 def emote(name: str, emotes: list) -> str:
 	matches = []
@@ -37,7 +37,7 @@ def emote(name: str, emotes: list) -> str:
 
 		# If match, append to matches
 		if idx != -1:
-			matches.append((idx, str(emote)))
+			matches.append((idx, emote))
 
 	if len(matches) > 0:
 		def sorter(v):
@@ -45,7 +45,7 @@ def emote(name: str, emotes: list) -> str:
 		matches.sort(key=sorter)
 		return matches[0][1]
 	else:
-		return ":" + name + ":"
+		return None
 
 def channel(name: str, channels: list) -> str:
 	matches = []
@@ -57,7 +57,7 @@ def channel(name: str, channels: list) -> str:
 
 		# If match, append to matches
 		if idx != -1:
-			matches.append((idx, channel.mention))
+			matches.append((idx, channel))
 
 	if len(matches) > 0:
 		def sorter(v):
@@ -65,4 +65,4 @@ def channel(name: str, channels: list) -> str:
 		matches.sort(key=sorter)
 		return matches[0][1]
 	else:
-		return ":" + name + ":"
+		return None
