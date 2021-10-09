@@ -365,7 +365,10 @@ async def online():
 	terminal.print("Online:")
 	for member in client.get_guild(current_guild).members:
 		if member.status is discord.Status.online:
-			terminal.print(member.name)
+			if member.nick:
+				terminal.print(f"{member.nick} ({member.name})")
+			else:
+				terminal.print(member.name)
 
 # Terminal colour scheme
 palette = [
