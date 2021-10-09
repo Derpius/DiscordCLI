@@ -95,6 +95,9 @@ async def on_ready():
 @client.event
 async def on_message(message: discord.Message):
 	if not client_ready: return
+	if message.author.id in typing:
+		del typing[message.author.id]
+		draw_typing()
 
 	if message.channel.id == current_channel:
 		print_message(message)
@@ -130,6 +133,7 @@ async def on_typing(
 	user: Union[discord.User, discord.Member],
 	when: datetime.datetime
 ):
+	if not client_ready: return
 	if user.id == client.user.id: return
 	typing[user.id] = (channel, user, when)
 	draw_typing()
