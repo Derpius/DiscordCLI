@@ -6,6 +6,7 @@ from inspect import signature
 import discord
 import urwid
 
+import time
 import pytz
 import datetime
 
@@ -31,6 +32,9 @@ client = discord.Client(intents=intents)
 current_channel = 0
 current_guild = 0
 client_ready = False
+
+client_typing = False
+client_typing_when = None
 
 unread_channels = set()
 
@@ -110,22 +114,25 @@ async def on_message(message: discord.Message):
 			)
 
 def draw_typing():
-	text = ""
-	keys = list(typing)
-	len_typing = len(keys)
+	valid_typers = [typer[1] for k, typer in typing.items() if typer[0].id == current_channel]
+	len_typing = len(valid_typers)
 
+	text = ""
 	if len_typing == 1:
-		text = f"{typing[keys[0]][1].name} is typing..."
+		typer = valid_typers[0]
+		text = f"{typer.nick if typer.nick else typer.name} is typing..."
 	elif len_typing == 2:
-		text = f"{typing[keys[0]][1].name} and {typing[keys[1]][1].name} are typing..."
+		typera = valid_typers[0], typerb = valid_typers[1]
+		text = f"{typera.nick if typera.nick else typera.name} and {typerb.nick if typerb.nick else typerb.name} are typing..."
 	elif len_typing > 5:
 		text = "Several people are typing..."
 	else:
 		for i in range(len_typing):
+			typer = valid_typers[i]
 			if i < len_typing - 1:
-				text += typing[keys[i]][1].name + ", "
+				text += (typer.nick if typer.nick else typer.name) + ", "
 			else:
-				text += f"and {typing[keys[i]][1].name} are typing..."
+				text += f"and {typer.nick if typer.nick else typer.name} are typing..."
 	terminal.set_status(text)
 
 @client.event
@@ -137,7 +144,7 @@ async def on_typing(
 	if not client_ready: return
 	if user.id == client.user.id: return
 	typing[user.id] = (channel, user, when)
-	draw_typing()
+	if channel.id == current_channel: draw_typing()
 
 async def invalidate_typing():
 	while True:
@@ -150,6 +157,16 @@ async def invalidate_typing():
 		if dirty: draw_typing()
 
 		await asyncio.sleep(0.1)
+
+async def handle_client_typing():
+	global client_typing
+	while True:
+		while not client_typing or time.time() - client_typing_when > TYPING_CUTOFF:
+			await asyncio.sleep(0.1)
+		async with client.get_channel(current_channel).typing():
+			while client_typing and time.time() - client_typing_when < TYPING_CUTOFF:
+				await asyncio.sleep(0.01)
+			client_typing = False
 
 async def command_handler(command, *args):
 	if command == "help":
@@ -176,11 +193,14 @@ async def get_console():
 				# Resolve mentions
 				for i in range(len(args)):
 					if len(args[i]) > 1 and args[i][0] == "@":
-						args[i] = find.member(args[i][1:], guild.members).mention
+						member = find.member(args[i][1:], guild.members)
+						if member: args[i] = member.mention
 					elif len(args[i]) > 2 and args[i][0] == ":" and args[i][-1] == ":":
-						args[i] = str(find.emote(args[i][1:-1], guild.emojis))
+						emote = find.emote(args[i][1:-1], guild.emojis)
+						if emote: args[i] = str(emote)
 					elif len(args[i]) > 1 and args[i][0] == "#":
-						args[i] = find.channel(args[i][1:], guild.text_channels).mention
+						channel = find.channel(args[i][1:], guild.text_channels)
+						if channel: args[i] = channel.mention
 				inp = " ".join(args)
 
 				channel = client.get_channel(current_channel)
@@ -253,7 +273,8 @@ async def channel(channel_name, category_name = None):
 		if matches[0][0] in unread_channels:
 			unread_channels.remove(matches[0][0])
 
-		global typing
+		global typing, client_typing
+		client_typing = False
 		typing = {}
 		draw_typing()
 
@@ -326,7 +347,8 @@ async def guild(*args):
 			for i in range(len(history) - 1, -1, -1):
 				print_message(history[i])
 
-		global typing
+		global typing, client_typing
+		client_typing = False
 		typing = {}
 		draw_typing()
 
@@ -392,6 +414,7 @@ palette = [
 # Set up event loop
 client.loop.create_task(get_console())
 client.loop.create_task(invalidate_typing())
+client.loop.create_task(handle_client_typing())
 
 aloop = asyncio.get_event_loop()
 event_loop = urwid.AsyncioEventLoop(loop=aloop)
@@ -406,8 +429,9 @@ def on_user_type(key: str):
 
 	channel = client.get_channel(current_channel)
 	if channel.permissions_for(channel.guild.me).send_messages:
-		asyncio.ensure_future(channel.trigger_typing(), loop=aloop)
-
+		global client_typing, client_typing_when
+		client_typing = True
+		client_typing_when = time.time()
 terminal.typing_callback = on_user_type
 
 loop.run()
