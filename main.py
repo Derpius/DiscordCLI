@@ -122,7 +122,7 @@ def draw_typing():
 		typer = valid_typers[0]
 		text = f"{typer.nick if typer.nick else typer.name} is typing..."
 	elif len_typing == 2:
-		typera = valid_typers[0], typerb = valid_typers[1]
+		typera, typerb = valid_typers[0], valid_typers[1]
 		text = f"{typera.nick if typera.nick else typera.name} and {typerb.nick if typerb.nick else typerb.name} are typing..."
 	elif len_typing > 5:
 		text = "Several people are typing..."
