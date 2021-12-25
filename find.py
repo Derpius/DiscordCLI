@@ -47,7 +47,7 @@ def emote(name: str, emotes: list) -> str:
 	else:
 		return None
 
-def channel(name: str, channels: list) -> str:
+def channel(name: str, channels: list, category_name: str = None) -> str:
 	matches = []
 	for channel in channels:
 		# Match upper then lowercase
@@ -57,13 +57,29 @@ def channel(name: str, channels: list) -> str:
 
 		# If match, append to matches
 		if idx != -1:
-			matches.append((idx, channel))
+			cat_idx = 0
+			if category_name:
+				if not channel.category: continue
+
+				cat_idx = channel.category.name.find(category_name)
+				if cat_idx == -1:
+					cat_idx = channel.category.name.lower().find(category_name.lower())
+
+			if cat_idx != -1:
+				matches.append((idx, cat_idx, channel))
 
 	if len(matches) > 0:
 		def sorter(v):
 			return v[0]
 		matches.sort(key=sorter)
-		return matches[0][1]
+
+		match = matches.pop(0)
+		if len(matches) > 0 and match[0] == matches[0][0]:
+			for possibleMatch in matches:
+				if possibleMatch[0] > match[0]: break
+				if possibleMatch[1] < match[1]: match = possibleMatch
+
+		return match[2]
 	else:
 		return None
 

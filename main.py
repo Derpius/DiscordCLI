@@ -239,52 +239,54 @@ async def channel(channel_name, category_name = None):
 	'''Switches to a channel'''
 	if not channel_name:
 		terminal.print("Missing required parameter channel_name")
+		return
 
-	channels = client.get_guild(current_guild).channels
-	matches = [
-		(
-			channel.id,
-			channel.name,
-			channel.category.name if channel.category is not None else "no-category",
-			channel
-		)
-		for channel in channels
-		if channel_name == channel.name
-	]
+	match = find.channel(
+		channel_name,
+		client.get_guild(current_guild).channels,
+		category_name
+	)
 
-	if category_name:
-		matches = [match for match in matches if match[2].lower() == category_name.lower()]
+	if not match:
+		if category_name:
+			terminal.print(f"Couldn't find channel '{category_name}:{channel_name}'")
+		else:
+			terminal.print(f"Couldn't find channel '{channel_name}'")
+		return
+	
+	if not match.permissions_for(match.guild.me).view_channel:
+		terminal.print("You do not have permission to view this channel")
+		return
 
-	if len(matches) == 0:
-		terminal.print(f"Couldn't find channel '{channel_name}'")
-	else:
-		if not matches[0][3].permissions_for(matches[0][3].guild.me).view_channel:
-			terminal.print("You do not have permission to view this channel")
-			return
+	global current_channel, client_ready
+	client_ready = False
+	current_channel = match.id
 
-		global current_channel, client_ready
-		client_ready = False
-		current_channel = matches[0][0]
+	if match.permissions_for(match.guild.me).read_message_history:
+		history = await match.history(limit=128).flatten()
+		for i in range(len(history) - 1, -1, -1):
+			print_message(history[i])
 
-		if matches[0][3].permissions_for(matches[0][3].guild.me).read_message_history:
-			history = await matches[0][3].history(limit=128).flatten()
-			for i in range(len(history) - 1, -1, -1):
-				print_message(history[i])
+	if match in unread_channels:
+		unread_channels.remove(match)
 
-		if matches[0][0] in unread_channels:
-			unread_channels.remove(matches[0][0])
+	global typing, client_typing
+	client_typing = False
+	typing = {}
+	draw_typing()
 
-		global typing, client_typing
-		client_typing = False
-		typing = {}
-		draw_typing()
-
-		terminal.print(f"Successfully switched to channel '{matches[0][1]}'")
+	if match.category:
+		terminal.print(f"Successfully switched to channel '{match.category.name}:{match.name}'")
 		terminal.set_prompt(
-			f"{matches[0][2]}:{matches[0][1]}> "
+			f"{match.category.name}:{match.name}> "
+		)
+	else:
+		terminal.print(f"Successfully switched to channel '{match.name}'")
+		terminal.set_prompt(
+			f"{match.name}> "
 		)
 
-		client_ready = True
+	client_ready = True
 
 @command
 async def channels():
@@ -321,7 +323,7 @@ async def guild(*args):
 	else:
 		global current_channel, current_guild, client_ready
 		client_ready = False
-		current_guild = match
+		current_guild = match.id
 
 		if len(match.text_channels) < 1:
 			raise Exception("Guild has no text channels")
