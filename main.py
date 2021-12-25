@@ -233,6 +233,7 @@ def command(func):
 		)
 
 # Terminal Commands
+
 @command
 async def channel(channel_name, category_name = None):
 	'''Switches to a channel'''
@@ -310,32 +311,29 @@ async def guild(*args):
 	guild_name = " ".join(args)
 	if len(guild_name) == 0:
 		terminal.print("Missing required parameter guild_name")
+		return
 
 	guilds = client.guilds
-	matches = [
-		(guild.id, guild.name, guild)
-		for guild in guilds
-		if guild_name == guild.name
-	]
+	match = find.guild(guild_name, guilds)
 
-	if len(matches) == 0:
+	if not match:
 		terminal.print(f"Couldn't find guild '{guild_name}'")
 	else:
 		global current_channel, current_guild, client_ready
 		client_ready = False
-		current_guild = matches[0][0]
+		current_guild = match
 
-		if len(matches[0][2].text_channels) < 1:
+		if len(match.text_channels) < 1:
 			raise Exception("Guild has no text channels")
 
 		channel = None
 		if (
-			matches[0][2].system_channel and
-			matches[0][2].system_channel.permissions_for(matches[0][2].me).view_channel
+			match.system_channel and
+			match.system_channel.permissions_for(match.me).view_channel
 		):
-			channel = matches[0][2].system_channel
+			channel = match.system_channel
 		else:
-			for possible_channel in matches[0][2].text_channels:
+			for possible_channel in match.text_channels:
 				if possible_channel.permissions_for(possible_channel.guild.me).view_channel:
 					channel = possible_channel
 					break
@@ -352,7 +350,7 @@ async def guild(*args):
 		typing = {}
 		draw_typing()
 
-		terminal.print(f"Successfully switched to guild '{matches[0][1]}'")
+		terminal.print(f"Successfully switched to guild '{match.name}'")
 		terminal.set_prompt(
 			f"{channel.category.name if channel.category else 'no-category'}:{channel.name}> "
 		)

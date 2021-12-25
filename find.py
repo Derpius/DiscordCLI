@@ -66,3 +66,23 @@ def channel(name: str, channels: list) -> str:
 		return matches[0][1]
 	else:
 		return None
+
+def guild(name: str, guilds: list) -> str:
+	matches = []
+	for guild in guilds:
+		# Match upper then lowercase
+		idx = guild.name.find(name)
+		if idx == -1:
+			idx = guild.name.lower().find(name.lower())
+
+		# If match, append to matches
+		if idx != -1:
+			matches.append((idx, guild))
+
+	if len(matches) > 0:
+		def sorter(v):
+			return v[0]
+		matches.sort(key=sorter)
+		return matches[0][1]
+	else:
+		return None
