@@ -110,7 +110,7 @@ async def on_message(message: discord.Message):
 		unread_channels.add(message.channel.id)
 		if client.user.mentioned_in(message):
 			terminal.print(
-				f"You just got mentioned at {message.guild.name if message.guild else 'Nowhere'} in {message.channel.category if message.channel.category else 'no-category'}:{message.channel.name}"
+				f"You just got mentioned at {message.guild.name if message.guild else 'Nowhere'} in {message.channel.category if message.channel.category else 'no-category'}:{message.channel.name} by {message.author.nick if message.author.nick else message.author.name}"
 			)
 
 def draw_typing():
