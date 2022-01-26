@@ -356,6 +356,10 @@ async def guild(*args):
 		terminal.set_prompt(
 			f"{channel.category.name if channel.category else 'no-category'}:{channel.name}> "
 		)
+		if match.me.nick:
+			terminal.set_title(f"{match.name} - {match.me.nick} ({match.me.name})")
+		else:
+			terminal.set_title(f"{match.name} - {match.me.name}")
 
 		client_ready = True
 
@@ -371,8 +375,12 @@ async def nick(*args):
 	'''Changes the bot's nickname'''
 	new_name = " ".join(args)
 	if not new_name or len(new_name) == 0: new_name = client.user.name
-	member = client.get_guild(current_guild).get_member(client.user.id)
+	member = client.get_guild(current_guild).me
 	await member.edit(nick=new_name)
+	if member.nick:
+		terminal.set_title(f"{client.get_guild(current_guild).name} - {member.nick} ({member.name})")
+	else:
+		terminal.set_title(f"{client.get_guild(current_guild).name} - {member.name}")
 
 @command
 async def emotes():
