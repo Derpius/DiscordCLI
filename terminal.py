@@ -101,7 +101,10 @@ class Terminal(urwid.WidgetWrap):
 				self._draw_history()
 			return
 
+		if key == "insert":
+			self.chatbox.insert_text("\n")
 		if key != "backspace": self.typing_callback(key)
+
 		super(Terminal, self).keypress(size, key)
 
 	def mouse_event(self, size, event, button, col, row, focus):
